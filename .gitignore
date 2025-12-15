@@ -1,2 +1,4 @@
-vgbacklog_env
-.env
+backend/database/vgbacklog_env
+backend/.env
+backend/database/igdb_staging.db
+backend/node_modules

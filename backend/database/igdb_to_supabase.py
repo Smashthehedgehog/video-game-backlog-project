@@ -5,10 +5,10 @@ import time
 import math
 import requests
 import sqlite3
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import List, Dict
 
-load_dotenv()
+load_dotenv(dotenv_path="../.env")
 
 # ---------- CONFIG ----------
 CLIENT_ID = os.getenv("IGDB_CLIENT_ID")
@@ -60,7 +60,7 @@ def igdb_post(endpoint: str, query: str, token: str):
     Output:
         list/dict: The JSON response from the IGDB API, or raises an Exception on error
     """
-    
+
     url = f"https://api.igdb.com/v4/{endpoint}"
     headers = {
         "Client-ID": CLIENT_ID,
@@ -263,3 +263,166 @@ def save_to_sqlite(conn, games, genres, platforms, companies, covers, screenshot
         for s_id in g.get("screenshots", []) or []:
             cur.execute("insert into game_screenshots(game_id, screenshot_id) values (?,?) on conflict(game_id, screenshot_id) do nothing", (gid, s_id))
     conn.commit()
+
+# ---------- Supabase upsert via PostgREST ----------
+def supabase_upsert(table: str, records: List[Dict]):
+    if not records:
+        return
+    # Supabase PostgREST endpoint
+    url = f"{SUPABASE_URL}/rest/v1/{table}"
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "Content-Type": "application/json",
+        "Prefer": "resolution=merge-duplicates"  # upsert
+    }
+    # chunked upload
+    for i in range(0, len(records), BATCH_SIZE):
+        chunk = records[i:i+BATCH_SIZE]
+        r = requests.post(url, headers=headers, json=chunk, timeout=60)
+        if not (200 <= r.status_code < 300):
+            raise Exception(f"Supabase upsert error {r.status_code}: {r.text}")
+        print(f"Upserted {min(i+BATCH_SIZE, len(records))} / {len(records)} into {table}")
+        time.sleep(0.1)
+
+def export_from_sqlite_and_sync(conn):
+    cur = conn.cursor()
+    # export genres
+    cur.execute("select id, name from igdb_genres")
+    genres = [{"id": r[0], "name": r[1]} for r in cur.fetchall()]
+    supabase_upsert("igdb_genres", genres)
+
+    cur.execute("select id, name from igdb_platforms")
+    platforms = [{"id": r[0], "name": r[1]} for r in cur.fetchall()]
+    supabase_upsert("igdb_platforms", platforms)
+
+    cur.execute("select id, name from igdb_companies")
+    companies = [{"id": r[0], "name": r[1]} for r in cur.fetchall()]
+    supabase_upsert("igdb_companies", companies)
+
+    cur.execute("select id, url, width, height from igdb_covers")
+    covers = [{"id": r[0], "url": r[1], "width": r[2], "height": r[3]} for r in cur.fetchall()]
+    supabase_upsert("igdb_covers", covers)
+
+    cur.execute("select id, url, width, height from igdb_screenshots")
+    screenshots = [{"id": r[0], "url": r[1], "width": r[2], "height": r[3]} for r in cur.fetchall()]
+    supabase_upsert("igdb_screenshots", screenshots)
+
+    # games
+    cur.execute("select id, name, summary, first_release_date, rating, total_rating_count, updated_at from igdb_games")
+    games = []
+    for r in cur.fetchall():
+        # convert first_release_date and updated_at from epoch to ISO strings if present
+        fdate = (datetime(1970, 1, 1, tzinfo=timezone.utc) + timedelta(seconds=r[3])).isoformat() if r[3] else None
+        updated = (datetime(1970, 1, 1, tzinfo=timezone.utc) + timedelta(seconds=r[6])).isoformat() if r[6] else None
+        games.append({
+            "id": r[0],
+            "name": r[1],
+            "summary": r[2],
+            "first_release_date": fdate,
+            "rating": r[4],
+            "total_rating_count": r[5],
+            "updated_at": updated
+        })
+    supabase_upsert("igdb_games", games)
+
+    # relationships: game_genres, game_platforms, game_companies, game_screenshots
+    cur.execute("select game_id, genre_id from game_genres")
+    game_genres = [{"game_id": r[0], "genre_id": r[1]} for r in cur.fetchall()]
+    supabase_upsert("game_genres", game_genres)
+
+    cur.execute("select game_id, platform_id from game_platforms")
+    game_platforms = [{"game_id": r[0], "platform_id": r[1]} for r in cur.fetchall()]
+    supabase_upsert("game_platforms", game_platforms)
+
+    cur.execute("select game_id, company_id from game_companies")
+    game_companies = [{"game_id": r[0], "company_id": r[1]} for r in cur.fetchall()]
+    supabase_upsert("game_companies", game_companies)
+
+    cur.execute("select game_id, screenshot_id from game_screenshots")
+    game_screens = [{"game_id": r[0], "screenshot_id": r[1]} for r in cur.fetchall()]
+    supabase_upsert("game_screenshots", game_screens)
+
+# def test_function(conn):
+#     cur = conn.cursor()
+#     cur.execute("select id, name, summary, first_release_date, rating, total_rating_count, updated_at from igdb_games")
+#     games = []
+#     for r in cur.fetchall():
+#         # convert first_release_date and updated_at from epoch to ISO strings if present
+#         fdate = (datetime(1970, 1, 1, tzinfo=timezone.utc) + timedelta(seconds=r[3])).isoformat() if r[3] else None
+#         updated = (datetime(1970, 1, 1, tzinfo=timezone.utc) + timedelta(seconds=r[6])).isoformat() if r[6] else None
+#         games.append({
+#             "id": r[0],
+#             "name": r[1],
+#             "summary": r[2],
+#             "first_release_date": fdate,
+#             "rating": r[4],
+#             "total_rating_count": r[5],
+#             "updated_at": updated
+#         })
+
+def main():
+    token = get_access_token()
+    conn = sqlite3.connect(SQLITE_DB)
+    init_sqlite(conn)
+
+    # get last sync timestamp from sqlite state (seconds epoch)
+    last_sync = get_state(conn, "last_sync_epoch")
+    since = int(last_sync) if last_sync else None
+
+    print("Starting fetch. since:", since)
+    games = fetch_games(token, since_updated_at=since)
+
+
+    if not games:
+        print("No updates found. Exiting.")
+        conn.close()
+        return
+
+    # collect referenced ids
+    genre_ids = []
+    platform_ids = []
+    involved_company_ids = []
+    cover_ids = []
+    screenshot_ids = []
+
+    for g in games:
+        genre_ids += (g.get("genres") or [])
+        platform_ids += (g.get("platforms") or [])
+        involved_company_ids += (g.get("involved_companies") or [])
+        if g.get("cover"):
+            cover_ids.append(g.get("cover"))
+        screenshot_ids += (g.get("screenshots") or [])
+
+    # fetch related objects
+    genres = fetch_lookup(token, "genres", genre_ids)
+    platforms = fetch_lookup(token, "platforms", platform_ids)
+    # involved_companies endpoint returns objects with .company which can be mapped to companies
+    involved_companies = fetch_lookup(token, "involved_companies", involved_company_ids)
+    # map involved_companies -> company ids and then fetch companies
+    company_ids = []
+    for ic in involved_companies:
+        if "company" in ic and isinstance(ic["company"], int):
+            company_ids.append(ic["company"])
+    companies = fetch_lookup(token, "companies", company_ids)
+    covers = fetch_lookup(token, "covers", cover_ids)
+    screenshots = fetch_lookup(token, "screenshots", screenshot_ids)
+
+    # persist to sqlite staging
+    save_to_sqlite(conn, games, genres, platforms, companies, covers, screenshots)
+
+    # update last sync to max updated_at in fetched games
+    max_updated = max([g.get("updated_at") or 0 for g in games])
+    set_state(conn, "last_sync_epoch", str(int(max_updated)))
+
+    # export to supabase
+    export_from_sqlite_and_sync(conn)
+
+    conn.close()
+    print("Sync complete.")
+
+if __name__ == "__main__":
+    time_start = time.time()
+    main()
+    time_end = time.time()
+    print(f"Time taken: {time_end - time_start} seconds")
