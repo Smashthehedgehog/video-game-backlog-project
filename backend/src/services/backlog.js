@@ -60,8 +60,7 @@ async function getUserBacklog(userId, status = null) {
                 id,
                 name,
                 first_release_date,
-                rating,
-                igdb_covers (id, url)
+                rating
             )
         `)
         .eq('user_id', userId)

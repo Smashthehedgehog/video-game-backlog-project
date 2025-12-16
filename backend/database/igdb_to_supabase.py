@@ -105,11 +105,9 @@ def init_sqlite(conn):
     create table if not exists igdb_platforms (id integer primary key, name text);
     create table if not exists igdb_companies (id integer primary key, name text);
     create table if not exists igdb_covers (id integer primary key, url text, width integer, height integer);
-    create table if not exists igdb_screenshots (id integer primary key, url text, width integer, height integer);
     create table if not exists game_genres (game_id integer, genre_id integer, primary key (game_id, genre_id));
     create table if not exists game_platforms (game_id integer, platform_id integer, primary key (game_id, platform_id));
     create table if not exists game_companies (game_id integer, company_id integer, primary key (game_id, company_id));
-    create table if not exists game_screenshots (game_id integer, screenshot_id integer, primary key (game_id, screenshot_id));
     """)
     conn.commit()
 
@@ -167,7 +165,7 @@ def fetch_games(token, since_updated_at=None):
             # IGDB updated_at is seconds since epoch
             where_clause = f"where updated_at >= {int(since_updated_at)};"
         query = f"""
-            fields id, name, summary, first_release_date, rating, total_rating_count, genres, platforms, involved_companies, cover, screenshots, updated_at;
+            fields id, name, summary, first_release_date, rating, total_rating_count, genres, platforms, involved_companies, cover, updated_at;
             {where_clause}
             limit {FETCH_LIMIT};
             offset {offset};
@@ -208,7 +206,7 @@ def fetch_lookup(token, endpoint, ids: List[int]):
     return results
 
 # ---------- Insert into SQLite staging ----------
-def save_to_sqlite(conn, games, genres, platforms, companies, covers, screenshots):
+def save_to_sqlite(conn, games, genres, platforms, companies, covers):
     """
     Upserts fetched IGDB data into the SQLite staging database.
 
@@ -219,7 +217,6 @@ def save_to_sqlite(conn, games, genres, platforms, companies, covers, screenshot
         platforms (list[dict]): List of platform dictionaries from IGDB
         companies (list[dict]): List of involved_companies dictionaries from IGDB
         covers (list[dict]): List of cover image dictionaries from IGDB
-        screenshots (list[dict]): List of screenshot dictionaries from IGDB
 
     Output:
         None (inserts/updates records in staging tables and commits the transaction)
@@ -234,8 +231,6 @@ def save_to_sqlite(conn, games, genres, platforms, companies, covers, screenshot
         cur.execute("insert into igdb_companies(id, name) values (?,?) on conflict(id) do update set name=excluded.name", (c.get("id"), c.get("company", {}).get("name") if isinstance(c.get("company"), dict) else c.get("name")))
     for cov in covers:
         cur.execute("insert into igdb_covers(id, url, width, height) values (?,?,?,?) on conflict(id) do update set url=excluded.url, width=excluded.width, height=excluded.height", (cov.get("id"), cov.get("url"), cov.get("width"), cov.get("height")))
-    for s in screenshots:
-        cur.execute("insert into igdb_screenshots(id, url, width, height) values (?,?,?,?) on conflict(id) do update set url=excluded.url, width=excluded.width, height=excluded.height", (s.get("id"), s.get("url"), s.get("width"), s.get("height")))
     # games and relationships
     for g in games:
         cur.execute("""
@@ -260,8 +255,6 @@ def save_to_sqlite(conn, games, genres, platforms, companies, covers, screenshot
         for ic in g.get("involved_companies", []) or []:
             # involved_companies entries are ids; we map to company ids by fetching involved_companies later.
             cur.execute("insert into game_companies(game_id, company_id) values (?,?) on conflict(game_id, company_id) do nothing", (gid, ic))
-        for s_id in g.get("screenshots", []) or []:
-            cur.execute("insert into game_screenshots(game_id, screenshot_id) values (?,?) on conflict(game_id, screenshot_id) do nothing", (gid, s_id))
     conn.commit()
 
 # ---------- Supabase upsert via PostgREST ----------
@@ -304,10 +297,6 @@ def export_from_sqlite_and_sync(conn):
     covers = [{"id": r[0], "url": r[1], "width": r[2], "height": r[3]} for r in cur.fetchall()]
     supabase_upsert("igdb_covers", covers)
 
-    cur.execute("select id, url, width, height from igdb_screenshots")
-    screenshots = [{"id": r[0], "url": r[1], "width": r[2], "height": r[3]} for r in cur.fetchall()]
-    supabase_upsert("igdb_screenshots", screenshots)
-
     # games
     cur.execute("select id, name, summary, first_release_date, rating, total_rating_count, updated_at from igdb_games")
     games = []
@@ -338,10 +327,6 @@ def export_from_sqlite_and_sync(conn):
     cur.execute("select game_id, company_id from game_companies")
     game_companies = [{"game_id": r[0], "company_id": r[1]} for r in cur.fetchall()]
     supabase_upsert("game_companies", game_companies)
-
-    cur.execute("select game_id, screenshot_id from game_screenshots")
-    game_screens = [{"game_id": r[0], "screenshot_id": r[1]} for r in cur.fetchall()]
-    supabase_upsert("game_screenshots", game_screens)
 
 # def test_function(conn):
 #     cur = conn.cursor()
@@ -384,7 +369,6 @@ def main():
     platform_ids = []
     involved_company_ids = []
     cover_ids = []
-    screenshot_ids = []
 
     for g in games:
         genre_ids += (g.get("genres") or [])
@@ -392,7 +376,6 @@ def main():
         involved_company_ids += (g.get("involved_companies") or [])
         if g.get("cover"):
             cover_ids.append(g.get("cover"))
-        screenshot_ids += (g.get("screenshots") or [])
 
     # fetch related objects
     genres = fetch_lookup(token, "genres", genre_ids)
@@ -406,10 +389,9 @@ def main():
             company_ids.append(ic["company"])
     companies = fetch_lookup(token, "companies", company_ids)
     covers = fetch_lookup(token, "covers", cover_ids)
-    screenshots = fetch_lookup(token, "screenshots", screenshot_ids)
 
     # persist to sqlite staging
-    save_to_sqlite(conn, games, genres, platforms, companies, covers, screenshots)
+    save_to_sqlite(conn, games, genres, platforms, companies, covers)
 
     # update last sync to max updated_at in fetched games
     max_updated = max([g.get("updated_at") or 0 for g in games])
