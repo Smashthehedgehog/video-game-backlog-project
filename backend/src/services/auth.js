@@ -27,6 +27,9 @@ const { supabase } = require('./supabaseClient');
  * @returns {Promise<{user: Object|null, session: Object|null, error: Error|null}>}
  */
 async function signUp(email, password, metadata = {}) {
+    console.log('[AUTH SERVICE] signUp called for email:', email);
+    console.log('[AUTH SERVICE] Metadata:', JSON.stringify(metadata));
+    
     const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -34,6 +37,12 @@ async function signUp(email, password, metadata = {}) {
             data: metadata // Stored in user's raw_user_meta_data
         }
     });
+
+    if (error) {
+        console.error('[AUTH SERVICE] Supabase signUp error:', error.message);
+    } else {
+        console.log('[AUTH SERVICE] Supabase signUp success, user ID:', data?.user?.id);
+    }
 
     return {
         user: data?.user || null,
@@ -50,10 +59,18 @@ async function signUp(email, password, metadata = {}) {
  * @returns {Promise<{user: Object|null, session: Object|null, error: Error|null}>}
  */
 async function signIn(email, password) {
+    console.log('[AUTH SERVICE] signIn called for email:', email);
+    
     const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
     });
+
+    if (error) {
+        console.error('[AUTH SERVICE] Supabase signIn error:', error.message);
+    } else {
+        console.log('[AUTH SERVICE] Supabase signIn success, user ID:', data?.user?.id);
+    }
 
     return {
         user: data?.user || null,
@@ -68,7 +85,15 @@ async function signIn(email, password) {
  * @returns {Promise<{error: Error|null}>}
  */
 async function signOut() {
+    console.log('[AUTH SERVICE] signOut called');
     const { error } = await supabase.auth.signOut();
+    
+    if (error) {
+        console.error('[AUTH SERVICE] Supabase signOut error:', error.message);
+    } else {
+        console.log('[AUTH SERVICE] Supabase signOut success');
+    }
+    
     return { error };
 }
 
@@ -125,7 +150,19 @@ async function updatePassword(newPassword) {
  * @returns {Promise<{user: Object|null, error: Error|null}>}
  */
 async function getUserFromToken(token) {
+    console.log('[AUTH SERVICE] getUserFromToken called');
+    console.log('[AUTH SERVICE] Token preview:', token?.substring(0, 20) + '...');
+    
     const { data: { user }, error } = await supabase.auth.getUser(token);
+    
+    if (error) {
+        console.error('[AUTH SERVICE] Token validation error:', error.message);
+    } else if (user) {
+        console.log('[AUTH SERVICE] Token valid, user ID:', user.id);
+    } else {
+        console.log('[AUTH SERVICE] Token validation returned no user');
+    }
+    
     return { user, error };
 }
 
