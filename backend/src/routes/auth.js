@@ -38,7 +38,7 @@ const {
  * Request Body:
  * - email (string): User's email (required)
  * - password (string): User's password, min 6 chars (required)
- * - displayName (string): User's display name (optional)
+ * - displayName (string): User's display name (required, must be unique)
  */
 router.post('/signup', async (req, res) => {
     try {
@@ -47,10 +47,9 @@ router.post('/signup', async (req, res) => {
         
         const { email, password, displayName } = req.body;
 
-        if (!email || !password) {
-            console.log('[AUTH ROUTE] Validation failed: Missing email or password');
-            console.log('[AUTH ROUTE] Email:', email, 'Password:', password ? '[PROVIDED]' : '[MISSING]');
-            return res.status(400).json({ error: 'Email and password are required' });
+        if (!email || !password || !displayName) {
+            console.log('[AUTH ROUTE] Validation failed: Missing required fields');
+            return res.status(400).json({ error: 'Email, password, and display name are required' });
         }
 
         if (password.length < 6) {
@@ -58,11 +57,20 @@ router.post('/signup', async (req, res) => {
             return res.status(400).json({ error: 'Password must be at least 6 characters' });
         }
 
-        console.log('[AUTH ROUTE] Calling signUp service for:', email);
-        const { user, session, error } = await signUp(email, password, { displayName });
+        if (displayName.trim().length < 3) {
+            console.log('[AUTH ROUTE] Validation failed: Display name too short');
+            return res.status(400).json({ error: 'Display name must be at least 3 characters' });
+        }
+
+        console.log('[AUTH ROUTE] Calling signUp service for:', email, 'with display name:', displayName);
+        const { user, session, error } = await signUp(email, password, displayName);
 
         if (error) {
             console.log('[AUTH ROUTE] Sign up error:', error.message);
+            // Check if it's a duplicate display name error
+            if (error.message && error.message.includes('duplicate') || error.code === '23505') {
+                return res.status(409).json({ error: 'Display name is already taken' });
+            }
             return res.status(400).json({ error: error.message });
         }
 

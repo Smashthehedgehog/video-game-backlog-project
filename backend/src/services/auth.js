@@ -19,35 +19,75 @@
 const { supabase } = require('./supabaseClient');
 
 /**
- * Registers a new user with email and password.
+ * Registers a new user with email and password, and creates a user profile with display name.
  * 
  * @param {string} email - User's email address
  * @param {string} password - User's password (min 6 characters)
- * @param {Object} metadata - Optional user metadata (display name, etc.)
+ * @param {string} displayName - User's display name (required, must be unique)
  * @returns {Promise<{user: Object|null, session: Object|null, error: Error|null}>}
  */
-async function signUp(email, password, metadata = {}) {
-    console.log('[AUTH SERVICE] signUp called for email:', email);
-    console.log('[AUTH SERVICE] Metadata:', JSON.stringify(metadata));
+async function signUp(email, password, displayName) {
+    console.log('[AUTH SERVICE] signUp called for email:', email, 'with display name:', displayName);
     
-    const { data, error } = await supabase.auth.signUp({
+    // First, check if display name is already taken
+    const { data: existingProfile, error: checkError } = await supabase
+        .from('user_profiles')
+        .select('display_name')
+        .eq('display_name', displayName)
+        .maybeSingle();
+
+    if (checkError && checkError.code !== 'PGRST116') {
+        console.error('[AUTH SERVICE] Error checking display name uniqueness:', checkError.message);
+        return { user: null, session: null, error: checkError };
+    }
+
+    if (existingProfile) {
+        console.log('[AUTH SERVICE] Display name already taken:', displayName);
+        return { 
+            user: null, 
+            session: null, 
+            error: { message: 'Display name is already taken', code: '23505' } 
+        };
+    }
+
+    // Create the auth user
+    const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
-        password,
-        options: {
-            data: metadata // Stored in user's raw_user_meta_data
-        }
+        password
     });
 
-    if (error) {
-        console.error('[AUTH SERVICE] Supabase signUp error:', error.message);
-    } else {
-        console.log('[AUTH SERVICE] Supabase signUp success, user ID:', data?.user?.id);
+    if (authError) {
+        console.error('[AUTH SERVICE] Supabase signUp error:', authError.message);
+        return { user: null, session: null, error: authError };
+    }
+
+    console.log('[AUTH SERVICE] Supabase signUp success, user ID:', authData?.user?.id);
+
+    // Create user profile with display name
+    if (authData.user) {
+        console.log('[AUTH SERVICE] Creating user profile for:', authData.user.id);
+        const { error: profileError } = await supabase
+            .from('user_profiles')
+            .insert({
+                user_id: authData.user.id,
+                display_name: displayName,
+                email: email
+            });
+
+        if (profileError) {
+            console.error('[AUTH SERVICE] Error creating user profile:', profileError.message);
+            // If profile creation fails, we should delete the auth user (cleanup)
+            // But Supabase doesn't allow this easily, so we return the error
+            return { user: null, session: null, error: profileError };
+        }
+
+        console.log('[AUTH SERVICE] User profile created successfully');
     }
 
     return {
-        user: data?.user || null,
-        session: data?.session || null,
-        error
+        user: authData?.user || null,
+        session: authData?.session || null,
+        error: null
     };
 }
 
