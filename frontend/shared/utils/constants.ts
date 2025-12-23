@@ -7,7 +7,7 @@
  */
 
 // API Configuration
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://video-game-backlog-api.onrender.com';
+export const API_BASE_URL = 'https://video-game-backlog-api.onrender.com';
 
 // Local Storage Keys
 export const TOKEN_KEY = 'vg_backlog_auth_token';
