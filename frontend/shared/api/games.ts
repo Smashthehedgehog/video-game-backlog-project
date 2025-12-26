@@ -42,12 +42,13 @@ export async function getGameById(id: number): Promise<Game> {
 
 /**
  * Search for games by name
+ * Returns all matching results (no limit)
  */
-export async function searchGames(query: string, limit?: number): Promise<GameSearchResult[]> {
+export async function searchGames(query: string): Promise<GameSearchResult[]> {
   const response = await apiClient.get<GameSearchResponse>(
     API_ENDPOINTS.GAMES_SEARCH,
     {
-      params: { q: query, ...(limit && { limit }) }
+      params: { q: query }
     }
   );
   return response.data;

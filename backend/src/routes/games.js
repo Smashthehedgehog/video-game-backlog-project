@@ -64,20 +64,20 @@ router.get('/', async (req, res) => {
 /**
  * GET /api/games/search
  * Searches for games by name.
+ * Returns all matching results (no limit).
  * 
  * Query Parameters:
  * - q (string): Search query (required)
- * - limit (number): Max results, default 20
  */
 router.get('/search', async (req, res) => {
     try {
-        const { q, limit } = req.query;
+        const { q } = req.query;
 
         if (!q || q.trim() === '') {
             return res.status(400).json({ error: 'Search query is required' });
         }
 
-        const { data, error } = await searchGames(q, parseInt(limit) || 20);
+        const { data, error } = await searchGames(q);
 
         if (error) {
             return res.status(500).json({ error: error.message });
