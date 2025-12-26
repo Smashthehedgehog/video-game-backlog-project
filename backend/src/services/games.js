@@ -20,6 +20,7 @@ const { supabase } = require('./supabaseClient');
 
 /**
  * Fetches a paginated list of games with optional filters.
+ * Only returns games that have at least one platform associated with them.
  * 
  * @param {Object} options - Query options
  * @param {number} options.page - Page number (default: 1)
@@ -36,6 +37,46 @@ async function getGames({ page = 1, limit = 20, genreId, platformId, sortBy = 'r
     const offset = (page - 1) * limit;
     console.log('[getGames] Calculated pagination offset:', offset, '(range:', offset, 'to', offset + limit - 1, ')');
 
+    // Get all games that have platforms (unless a specific platform filter is provided)
+    let gameIdsWithPlatforms = [];
+    
+    if (platformId) {
+        // If platform filter is provided, use it
+        console.log('[getGames] Platform filter detected, fetching games with platform ID:', platformId);
+        const { data: gameIds } = await supabase
+            .from('game_platforms')
+            .select('game_id')
+            .eq('platform_id', platformId);
+        
+        console.log('[getGames] Found', gameIds?.length || 0, 'games matching platform filter');
+        if (gameIds && gameIds.length > 0) {
+            gameIdsWithPlatforms = gameIds.map(g => g.game_id);
+            console.log('[getGames] Applying platform filter with game IDs:', gameIdsWithPlatforms.slice(0, 5), gameIdsWithPlatforms.length > 5 ? '...' : '');
+        } else {
+            console.log('[getGames] No games found for platform filter, query will return empty results');
+            return { data: [], count: 0, error: null };
+        }
+    } else {
+        // No specific platform filter, but still require games to have at least one platform
+        console.log('[getGames] No platform filter specified, fetching all games with platforms');
+        const { data: gamesWithPlatforms, error: platformError } = await supabase
+            .from('game_platforms')
+            .select('game_id');
+        
+        if (platformError) {
+            console.error('[getGames] Error fetching games with platforms:', platformError.message);
+            return { data: null, count: 0, error: platformError };
+        }
+        
+        gameIdsWithPlatforms = [...new Set(gamesWithPlatforms?.map(gp => gp.game_id) || [])];
+        console.log('[getGames] Found', gameIdsWithPlatforms.length, 'unique games with platforms');
+        
+        if (gameIdsWithPlatforms.length === 0) {
+            console.warn('[getGames] No games with platforms found in database');
+            return { data: [], count: 0, error: null };
+        }
+    }
+
     console.log('[getGames] Building base query for igdb_games table');
     let query = supabase
         .from('igdb_games')
@@ -47,6 +88,7 @@ async function getGames({ page = 1, limit = 20, genreId, platformId, sortBy = 'r
             rating,
             total_rating_count
         `, { count: 'exact' })
+        .in('id', gameIdsWithPlatforms)
         .order(sortBy, { ascending: order === 'asc' })
         .range(offset, offset + limit - 1);
 
@@ -65,24 +107,7 @@ async function getGames({ page = 1, limit = 20, genreId, platformId, sortBy = 'r
             query = query.in('id', gameIdArray);
         } else {
             console.log('[getGames] No games found for genre filter, query will return empty results');
-        }
-    }
-
-    // Apply platform filter if provided
-    if (platformId) {
-        console.log('[getGames] Platform filter detected, fetching games with platform ID:', platformId);
-        const { data: gameIds } = await supabase
-            .from('game_platforms')
-            .select('game_id')
-            .eq('platform_id', platformId);
-        
-        console.log('[getGames] Found', gameIds?.length || 0, 'games matching platform filter');
-        if (gameIds && gameIds.length > 0) {
-            const gameIdArray = gameIds.map(g => g.game_id);
-            console.log('[getGames] Applying platform filter with game IDs:', gameIdArray.slice(0, 5), gameIdArray.length > 5 ? '...' : '');
-            query = query.in('id', gameIdArray);
-        } else {
-            console.log('[getGames] No games found for platform filter, query will return empty results');
+            return { data: [], count: 0, error: null };
         }
     }
 
@@ -180,6 +205,7 @@ async function getGameById(id) {
 
 /**
  * Searches for games by name.
+ * Only returns games that have at least one platform associated with them.
  * 
  * @param {string} query - The search query
  * @param {number} limit - Maximum results to return (default: 20)
@@ -188,7 +214,26 @@ async function getGameById(id) {
 async function searchGames(query, limit = 20) {
     console.log('[searchGames] Starting game search with query:', query, '| limit:', limit);
     
-    console.log('[searchGames] Executing case-insensitive LIKE search on game names');
+    // First, get game IDs that have platforms
+    console.log('[searchGames] Fetching games with platforms from game_platforms table');
+    const { data: gamesWithPlatforms, error: platformError } = await supabase
+        .from('game_platforms')
+        .select('game_id');
+    
+    if (platformError) {
+        console.error('[searchGames] Error fetching games with platforms:', platformError.message);
+        return { data: null, error: platformError };
+    }
+    
+    const gameIdsWithPlatforms = [...new Set(gamesWithPlatforms?.map(gp => gp.game_id) || [])];
+    console.log('[searchGames] Found', gameIdsWithPlatforms.length, 'unique games with platforms');
+    
+    if (gameIdsWithPlatforms.length === 0) {
+        console.warn('[searchGames] No games with platforms found in database');
+        return { data: [], error: null };
+    }
+    
+    console.log('[searchGames] Executing case-insensitive LIKE search on game names (filtered by platform availability)');
     const { data, error } = await supabase
         .from('igdb_games')
         .select(`
@@ -198,6 +243,7 @@ async function searchGames(query, limit = 20) {
             rating
         `)
         .ilike('name', `%${query}%`)
+        .in('id', gameIdsWithPlatforms)
         .order('rating', { ascending: false })
         .limit(limit);
 
@@ -206,7 +252,7 @@ async function searchGames(query, limit = 20) {
         return { data, error };
     }
 
-    console.log('[searchGames] Search completed successfully, found', data?.length || 0, 'matching games');
+    console.log('[searchGames] Search completed successfully, found', data?.length || 0, 'matching games with platforms');
     if (data && data.length > 0) {
         console.log('[searchGames] Top results:', data.slice(0, 3).map(g => g.name).join(', '));
     }
