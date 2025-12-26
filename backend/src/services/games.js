@@ -180,15 +180,15 @@ async function getGameById(id) {
 
 /**
  * Searches for games by name.
+ * Returns all matching results (no limit).
  * 
  * @param {string} query - The search query
- * @param {number} limit - Maximum results to return (default: 20)
  * @returns {Promise<{data: Array, error: Error|null}>}
  */
-async function searchGames(query, limit = 20) {
-    console.log('[searchGames] Starting game search with query:', query, '| limit:', limit);
+async function searchGames(query) {
+    console.log('[searchGames] Starting game search with query:', query);
     
-    console.log('[searchGames] Executing case-insensitive LIKE search on game names');
+    console.log('[searchGames] Executing case-insensitive LIKE search on game names (no limit)');
     const { data, error } = await supabase
         .from('igdb_games')
         .select(`
@@ -198,8 +198,7 @@ async function searchGames(query, limit = 20) {
             rating
         `)
         .ilike('name', `%${query}%`)
-        .order('rating', { ascending: false })
-        .limit(limit);
+        .order('rating', { ascending: false });
 
     if (error) {
         console.error('[searchGames] Search failed with error:', error.message);
