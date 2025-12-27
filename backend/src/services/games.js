@@ -46,8 +46,7 @@ async function getGames({ page = 1, limit = 20, genreId, platformId, sortBy = 'r
             first_release_date,
             rating,
             total_rating_count,
-            cover_id,
-            igdb_covers(id, url, width, height)
+            cover_id
         `, { count: 'exact' })
         .order(sortBy, { ascending: order === 'asc' })
         .range(offset, offset + limit - 1);
@@ -98,7 +97,6 @@ async function getGames({ page = 1, limit = 20, genreId, platformId, sortBy = 'r
     }
 
     console.log('[getGames] Query response - data:', data?.length || 0, 'items, count:', count);
-    console.log('[getGames] Raw data sample:', data?.slice(0, 2));
     
     if (count === 0) {
         console.warn('[getGames] WARNING: No games found in igdb_games table!');
@@ -106,6 +104,36 @@ async function getGames({ page = 1, limit = 20, genreId, platformId, sortBy = 'r
         console.warn('[getGames]   1. The table is empty');
         console.warn('[getGames]   2. RLS (Row Level Security) is blocking access');
         console.warn('[getGames]   3. The table name is incorrect');
+    }
+
+    // Fetch covers for games that have cover_id
+    if (data && data.length > 0) {
+        const coverIds = data
+            .filter(game => game.cover_id)
+            .map(game => game.cover_id);
+        
+        if (coverIds.length > 0) {
+            console.log('[getGames] Fetching', coverIds.length, 'covers');
+            const { data: covers, error: coversError } = await supabase
+                .from('igdb_covers')
+                .select('id, url, width, height')
+                .in('id', coverIds);
+            
+            if (!coversError && covers) {
+                console.log('[getGames] Fetched', covers.length, 'covers');
+                // Create a map for quick lookup
+                const coversMap = new Map(covers.map(cover => [cover.id, cover]));
+                
+                // Attach covers to games
+                data.forEach(game => {
+                    if (game.cover_id && coversMap.has(game.cover_id)) {
+                        game.igdb_covers = coversMap.get(game.cover_id);
+                    }
+                });
+            } else if (coversError) {
+                console.error('[getGames] Error fetching covers:', coversError.message);
+            }
+        }
     }
     
     console.log('[getGames] Successfully fetched', data?.length || 0, 'games out of', count, 'total matching games');
@@ -213,7 +241,8 @@ async function searchGames(query) {
             id,
             name,
             first_release_date,
-            rating
+            rating,
+            cover_id
         `)
         .ilike('name', `%${query}%`)
         .order('rating', { ascending: false });
@@ -226,6 +255,34 @@ async function searchGames(query) {
     console.log('[searchGames] Search completed successfully, found', data?.length || 0, 'matching games');
     if (data && data.length > 0) {
         console.log('[searchGames] Top results:', data.slice(0, 3).map(g => g.name).join(', '));
+    }
+
+    // Fetch covers for games that have cover_id
+    if (data && data.length > 0) {
+        const coverIds = data
+            .filter(game => game.cover_id)
+            .map(game => game.cover_id);
+        
+        if (coverIds.length > 0) {
+            console.log('[searchGames] Fetching', coverIds.length, 'covers');
+            const { data: covers, error: coversError } = await supabase
+                .from('igdb_covers')
+                .select('id, url, width, height')
+                .in('id', coverIds);
+            
+            if (!coversError && covers) {
+                console.log('[searchGames] Fetched', covers.length, 'covers');
+                const coversMap = new Map(covers.map(cover => [cover.id, cover]));
+                
+                data.forEach(game => {
+                    if (game.cover_id && coversMap.has(game.cover_id)) {
+                        game.igdb_covers = coversMap.get(game.cover_id);
+                    }
+                });
+            } else if (coversError) {
+                console.error('[searchGames] Error fetching covers:', coversError.message);
+            }
+        }
     }
     
     return { data, error };

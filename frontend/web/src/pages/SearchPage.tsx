@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useGames } from '../../../shared/hooks/useGames';
 import { useLibrary } from '../../../shared/hooks/useLibrary';
 import { useAuth } from '../../../shared/hooks/useAuth';
+import { GameCard } from '../components/GameCard';
 import type { GameListItem } from '../../../shared/types/game';
 
 export function SearchPage() {
@@ -129,47 +130,16 @@ export function SearchPage() {
 
         {/* Games Grid */}
         {!isLoading && paginatedSearchResults.length > 0 && (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
             {paginatedSearchResults.map((game) => (
-              <div
+              <GameCard
                 key={game.id}
-                className="bg-gray-800 rounded-lg overflow-hidden hover:ring-2 hover:ring-blue-500 transition"
-              >
-                <div className="p-6">
-                  <h3 className="text-xl font-bold mb-2 line-clamp-2">
-                    {game.name}
-                  </h3>
-                  
-                  {game.rating && (
-                    <div className="flex items-center mb-3">
-                      <span className="text-yellow-400 mr-2">⭐</span>
-                      <span className="text-gray-300">
-                        {Math.round(game.rating)}/100
-                      </span>
-                    </div>
-                  )}
-
-                  {game.first_release_date && (
-                    <p className="text-gray-400 text-sm mb-4">
-                      {new Date(game.first_release_date).getFullYear()}
-                    </p>
-                  )}
-
-                  {isAuthenticated && (
-                    <button
-                      onClick={() => handleAddToLibrary(game.id)}
-                      disabled={isInLibrary(game.id)}
-                      className={`w-full py-2 rounded-lg font-semibold transition ${
-                        isInLibrary(game.id)
-                          ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
-                          : 'bg-blue-600 hover:bg-blue-700'
-                      }`}
-                    >
-                      {isInLibrary(game.id) ? 'In Backlog' : 'Add to Backlog'}
-                    </button>
-                  )}
-                </div>
-              </div>
+                game={game}
+                onAddToLibrary={handleAddToLibrary}
+                isInLibrary={isInLibrary(game.id)}
+                isAuthenticated={isAuthenticated}
+                showAddButton={isAuthenticated}
+              />
             ))}
           </div>
         )}
