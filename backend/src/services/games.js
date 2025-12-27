@@ -45,7 +45,9 @@ async function getGames({ page = 1, limit = 20, genreId, platformId, sortBy = 'r
             summary,
             first_release_date,
             rating,
-            total_rating_count
+            total_rating_count,
+            cover_id,
+            igdb_covers(id, url, width, height)
         `, { count: 'exact' })
         .order(sortBy, { ascending: order === 'asc' })
         .range(offset, offset + limit - 1);
@@ -130,7 +132,8 @@ async function getGameById(id) {
             first_release_date,
             rating,
             total_rating_count,
-            updated_at
+            updated_at,
+            cover_id
         `)
         .eq('id', id)
         .single();
@@ -141,6 +144,21 @@ async function getGameById(id) {
     }
 
     console.log('[getGameById] Base game data retrieved:', game.name);
+
+    // Get cover for this game
+    if (game.cover_id) {
+        console.log('[getGameById] Fetching cover for cover ID:', game.cover_id);
+        const { data: cover } = await supabase
+            .from('igdb_covers')
+            .select('id, url, width, height')
+            .eq('id', game.cover_id)
+            .single();
+        game.cover = cover || null;
+        console.log('[getGameById] Cover fetched:', cover ? 'Yes' : 'No');
+    } else {
+        console.log('[getGameById] No cover_id for this game');
+        game.cover = null;
+    }
 
     // Get genres for this game
     console.log('[getGameById] Fetching genres for game ID:', id);
@@ -173,7 +191,7 @@ async function getGameById(id) {
     game.companies = companies?.map(c => c.igdb_companies).filter(Boolean) || [];
 
     console.log('[getGameById] Successfully compiled complete game data for:', game.name);
-    console.log('[getGameById] Final data includes:', game.genres.length, 'genres,', game.platforms.length, 'platforms,', game.companies.length, 'companies');
+    console.log('[getGameById] Final data includes:', game.genres.length, 'genres,', game.platforms.length, 'platforms,', game.companies.length, 'companies, cover:', game.cover ? 'Yes' : 'No');
     
     return { data: game, error: null };
 }
