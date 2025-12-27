@@ -99,7 +99,8 @@ def init_sqlite(conn):
       first_release_date integer,
       rating real,
       total_rating_count integer,
-      updated_at integer
+      updated_at integer,
+      cover_id integer
     );
     create table if not exists igdb_genres (id integer primary key, name text);
     create table if not exists igdb_platforms (id integer primary key, name text);
@@ -234,9 +235,9 @@ def save_to_sqlite(conn, games, genres, platforms, companies, covers):
     # games and relationships
     for g in games:
         cur.execute("""
-            insert into igdb_games(id, name, summary, first_release_date, rating, total_rating_count, updated_at)
-            values (?,?,?,?,?,?,?)
-            on conflict(id) do update set name=excluded.name, summary=excluded.summary, first_release_date=excluded.first_release_date, rating=excluded.rating, total_rating_count=excluded.total_rating_count, updated_at=excluded.updated_at
+            insert into igdb_games(id, name, summary, first_release_date, rating, total_rating_count, updated_at, cover_id)
+            values (?,?,?,?,?,?,?,?)
+            on conflict(id) do update set name=excluded.name, summary=excluded.summary, first_release_date=excluded.first_release_date, rating=excluded.rating, total_rating_count=excluded.total_rating_count, updated_at=excluded.updated_at, cover_id=excluded.cover_id
         """, (
             g.get("id"),
             g.get("name"),
@@ -244,7 +245,8 @@ def save_to_sqlite(conn, games, genres, platforms, companies, covers):
             g.get("first_release_date"),
             g.get("rating"),
             g.get("total_rating_count"),
-            g.get("updated_at")
+            g.get("updated_at"),
+            g.get("cover")
         ))
         # relationships
         gid = g.get("id")
@@ -298,7 +300,7 @@ def export_from_sqlite_and_sync(conn):
     supabase_upsert("igdb_covers", covers)
 
     # games
-    cur.execute("select id, name, summary, first_release_date, rating, total_rating_count, updated_at from igdb_games")
+    cur.execute("select id, name, summary, first_release_date, rating, total_rating_count, updated_at, cover_id from igdb_games")
     games = []
     for r in cur.fetchall():
         # convert first_release_date and updated_at from epoch to ISO strings if present
@@ -311,7 +313,8 @@ def export_from_sqlite_and_sync(conn):
             "first_release_date": fdate,
             "rating": r[4],
             "total_rating_count": r[5],
-            "updated_at": updated
+            "updated_at": updated,
+            "cover_id": r[7]
         })
     supabase_upsert("igdb_games", games)
 
