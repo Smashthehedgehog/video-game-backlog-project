@@ -3,7 +3,6 @@ import { useGames } from '../../../shared/hooks/useGames';
 import { useLibrary } from '../../../shared/hooks/useLibrary';
 import { useAuth } from '../../../shared/hooks/useAuth';
 import { GameCard } from '../components/GameCard';
-import type { GameListItem } from '../../../shared/types/game';
 
 export function SearchPage() {
   const { games, pagination, fetchGames, searchGames, isLoading, error } = useGames();
