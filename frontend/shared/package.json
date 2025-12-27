@@ -9,7 +9,7 @@
   "author": "",
   "license": "ISC",
   "description": "",
-  "dependencies": {
+  "peerDependencies": {
     "react": "^19.2.3"
   },
   "devDependencies": {
