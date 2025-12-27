@@ -4,3 +4,5 @@ backend/database/igdb_staging.db
 backend/node_modules
 frontend/web/node_modules
 frontend/mobile/node_modules
+frontend/shared/node_modules
+frontend/shared/package-lock.json
