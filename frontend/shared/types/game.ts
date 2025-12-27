@@ -51,6 +51,8 @@ export interface Game {
   rating: number | null;
   total_rating_count: number | null;
   updated_at: string;
+  cover_id?: number | null;
+  cover?: Cover | null;
   genres?: Genre[];
   platforms?: Platform[];
   companies?: Company[];
@@ -66,6 +68,8 @@ export interface GameListItem {
   rating: number | null;
   summary?: string | null;
   total_rating_count?: number | null;
+  cover_id?: number | null;
+  igdb_covers?: Cover | null;
 }
 
 /**
@@ -76,6 +80,8 @@ export interface GameSearchResult {
   name: string;
   first_release_date: string | null;
   rating: number | null;
+  cover_id?: number | null;
+  igdb_covers?: Cover | null;
 }
 
 /**
