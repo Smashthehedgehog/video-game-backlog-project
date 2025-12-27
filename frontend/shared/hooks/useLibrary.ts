@@ -59,7 +59,7 @@ export function useLibrary(autoFetch: boolean = false): UseLibraryReturn {
       const newEntry = await libraryApi.addToLibrary(gameId, status);
       
       // Optimistically update local state
-      setLibrary(prev => [...prev, newEntry]);
+      setLibrary((prev: LibraryEntry[]) => [...prev, newEntry]);
     } catch (err: any) {
       const errorMessage = err.message || 'Failed to add game to library';
       setError(errorMessage);
@@ -81,8 +81,8 @@ export function useLibrary(autoFetch: boolean = false): UseLibraryReturn {
       const updatedEntry = await libraryApi.updateLibraryEntry(gameId, updates);
       
       // Optimistically update local state
-      setLibrary(prev =>
-        prev.map(entry =>
+      setLibrary((prev: LibraryEntry[]) =>
+        prev.map((entry: LibraryEntry) =>
           entry.game_id === gameId ? updatedEntry : entry
         )
       );
@@ -107,7 +107,7 @@ export function useLibrary(autoFetch: boolean = false): UseLibraryReturn {
       await libraryApi.removeFromLibrary(gameId);
       
       // Optimistically update local state
-      setLibrary(prev => prev.filter(entry => entry.game_id !== gameId));
+      setLibrary((prev: LibraryEntry[]) => prev.filter((entry: LibraryEntry) => entry.game_id !== gameId));
     } catch (err: any) {
       const errorMessage = err.message || 'Failed to remove game from library';
       setError(errorMessage);
@@ -122,14 +122,14 @@ export function useLibrary(autoFetch: boolean = false): UseLibraryReturn {
    * Check if a game is in the library
    */
   const isInLibrary = useCallback((gameId: number): boolean => {
-    return library.some(entry => entry.game_id === gameId);
+    return library.some((entry: LibraryEntry) => entry.game_id === gameId);
   }, [library]);
 
   /**
    * Get library entry by game ID
    */
   const getEntryByGameId = useCallback((gameId: number): LibraryEntry | undefined => {
-    return library.find(entry => entry.game_id === gameId);
+    return library.find((entry: LibraryEntry) => entry.game_id === gameId);
   }, [library]);
 
   /**

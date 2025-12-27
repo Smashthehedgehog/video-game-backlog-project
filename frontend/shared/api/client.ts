@@ -14,13 +14,14 @@ import { getToken } from '../utils/storage';
  * API Error class for structured error handling
  */
 export class ApiError extends Error {
-  constructor(
-    public status: number,
-    public message: string,
-    public data?: any
-  ) {
+  status: number;
+  data?: any;
+  
+  constructor(status: number, message: string, data?: any) {
     super(message);
     this.name = 'ApiError';
+    this.status = status;
+    this.data = data;
   }
 }
 

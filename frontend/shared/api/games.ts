@@ -10,7 +10,6 @@ import { apiClient } from './client';
 import { API_ENDPOINTS } from '../utils/constants';
 import type {
   Game,
-  GameListItem,
   GameSearchResult,
   GamesResponse,
   GameDetailResponse,
