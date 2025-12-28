@@ -14,7 +14,7 @@ export function RegisterPage() {
     
     try {
       await register(email, password, displayName);
-      navigate('/backlog');
+      window.location.href = '/backlog';
     } catch (err) {
       // Error is handled by useAuth hook
     }

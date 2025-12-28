@@ -7,6 +7,7 @@ export function Navigation() {
   const handleLogout = async () => {
     try {
       await logout();
+      window.location.href = '/';
     } catch (error) {
       console.error('Logout failed:', error);
     }
