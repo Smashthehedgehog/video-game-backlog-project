@@ -42,19 +42,14 @@ export function Navigation() {
                   to="/backlog" 
                   className="hover:text-blue-400 transition font-medium"
                 >
-                  My Backlog
+                  {user?.display_name || user?.email?.split('@')[0] || 'My Backlog'}
                 </Link>
-                <div className="flex items-center space-x-4">
-                  <span className="text-gray-300 text-sm">
-                    {user?.email}
-                  </span>
-                  <button
-                    onClick={handleLogout}
-                    className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-md transition font-medium"
-                  >
-                    Logout
-                  </button>
-                </div>
+                <button
+                  onClick={handleLogout}
+                  className="hover:text-red-400 transition font-medium"
+                >
+                  Logout
+                </button>
               </>
             ) : (
               <div className="flex items-center space-x-4">

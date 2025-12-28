@@ -12,6 +12,7 @@
 export interface User {
   id: string;
   email: string;
+  display_name?: string;
   created_at: string;
   // Add other user fields as needed
 }
