@@ -13,7 +13,7 @@ export function LoginPage() {
     
     try {
       await login(email, password);
-      navigate('/backlog');
+      window.location.href = '/backlog';
     } catch (err) {
       // Error is handled by useAuth hook
     }
