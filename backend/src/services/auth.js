@@ -82,6 +82,9 @@ async function signUp(email, password, displayName) {
         }
 
         console.log('[AUTH SERVICE] User profile created successfully');
+        
+        // Add display_name to user object
+        authData.user.display_name = displayName;
     }
 
     return {
@@ -108,14 +111,33 @@ async function signIn(email, password) {
 
     if (error) {
         console.error('[AUTH SERVICE] Supabase signIn error:', error.message);
-    } else {
-        console.log('[AUTH SERVICE] Supabase signIn success, user ID:', data?.user?.id);
+        return {
+            user: null,
+            session: null,
+            error
+        };
+    }
+
+    console.log('[AUTH SERVICE] Supabase signIn success, user ID:', data?.user?.id);
+
+    // Fetch display name from user_profiles
+    let user = data?.user || null;
+    if (user) {
+        const { data: profile } = await supabase
+            .from('user_profiles')
+            .select('display_name')
+            .eq('user_id', user.id)
+            .single();
+        
+        if (profile) {
+            user.display_name = profile.display_name;
+        }
     }
 
     return {
-        user: data?.user || null,
+        user,
         session: data?.session || null,
-        error
+        error: null
     };
 }
 
@@ -197,13 +219,27 @@ async function getUserFromToken(token) {
     
     if (error) {
         console.error('[AUTH SERVICE] Token validation error:', error.message);
-    } else if (user) {
+        return { user: null, error };
+    }
+    
+    if (user) {
         console.log('[AUTH SERVICE] Token valid, user ID:', user.id);
+        
+        // Fetch display name from user_profiles
+        const { data: profile } = await supabase
+            .from('user_profiles')
+            .select('display_name')
+            .eq('user_id', user.id)
+            .single();
+        
+        if (profile) {
+            user.display_name = profile.display_name;
+        }
     } else {
         console.log('[AUTH SERVICE] Token validation returned no user');
     }
     
-    return { user, error };
+    return { user, error: null };
 }
 
 module.exports = {
