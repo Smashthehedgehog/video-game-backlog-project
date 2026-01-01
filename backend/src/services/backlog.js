@@ -51,6 +51,7 @@ async function getUserBacklog(userId, status = null) {
         .from('user_backlog')
         .select(`
             id,
+            game_id,
             status,
             rating,
             notes,
@@ -60,7 +61,8 @@ async function getUserBacklog(userId, status = null) {
                 id,
                 name,
                 first_release_date,
-                rating
+                rating,
+                cover_id
             )
         `)
         .eq('user_id', userId)
@@ -71,6 +73,36 @@ async function getUserBacklog(userId, status = null) {
     }
 
     const { data, error } = await query;
+
+    if (error) {
+        return { data, error };
+    }
+
+    // Fetch covers for games that have cover_id (similar to getGames in games.js)
+    if (data && data.length > 0) {
+        const coverIds = data
+            .filter(entry => entry.igdb_games?.cover_id)
+            .map(entry => entry.igdb_games.cover_id);
+        
+        if (coverIds.length > 0) {
+            const { data: covers, error: coversError } = await supabase
+                .from('igdb_covers')
+                .select('id, url, width, height')
+                .in('id', coverIds);
+            
+            if (!coversError && covers) {
+                // Create a map for quick lookup
+                const coversMap = new Map(covers.map(cover => [cover.id, cover]));
+                
+                // Attach covers to games
+                data.forEach(entry => {
+                    if (entry.igdb_games?.cover_id && coversMap.has(entry.igdb_games.cover_id)) {
+                        entry.igdb_games.igdb_covers = coversMap.get(entry.igdb_games.cover_id);
+                    }
+                });
+            }
+        }
+    }
 
     return { data, error };
 }
