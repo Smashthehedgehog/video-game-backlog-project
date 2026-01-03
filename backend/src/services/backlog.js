@@ -162,8 +162,40 @@ async function updateBacklogEntry(userId, gameId, updates) {
         .update(updateData)
         .eq('user_id', userId)
         .eq('game_id', gameId)
-        .select()
+        .select(`
+            id,
+            game_id,
+            status,
+            rating,
+            notes,
+            created_at,
+            updated_at,
+            igdb_games (
+                id,
+                name,
+                first_release_date,
+                rating,
+                cover_id
+            )
+        `)
         .single();
+
+    if (error || !data) {
+        return { data, error };
+    }
+
+    // Fetch cover if game has cover_id
+    if (data.igdb_games?.cover_id) {
+        const { data: cover } = await supabase
+            .from('igdb_covers')
+            .select('id, url, width, height')
+            .eq('id', data.igdb_games.cover_id)
+            .single();
+        
+        if (cover) {
+            data.igdb_games.igdb_covers = cover;
+        }
+    }
 
     return { data, error };
 }
