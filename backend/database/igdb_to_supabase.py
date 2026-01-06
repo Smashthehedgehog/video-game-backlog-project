@@ -161,7 +161,7 @@ def fetch_games(token, since_updated_at=None):
     offset = 0
     while True:
         # request core fields plus references to related entities
-        where_clause = ""
+        where_clause = "where game_type = (0,1,2,3,4,6,7,8,9,10);"
         if since_updated_at:
             # IGDB updated_at is seconds since epoch
             where_clause = f"where updated_at >= {int(since_updated_at)};"
