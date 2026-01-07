@@ -44,46 +44,46 @@ export function BacklogPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen text-white">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <h1 className="text-4xl font-bold mb-8">My Backlog</h1>
+        <h1 className="text-4xl font-bold mb-8 text-green-300">My Backlog</h1>
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
-          <div className="bg-gray-800 p-4 rounded-lg text-center">
-            <div className="text-3xl font-bold text-blue-400">{stats.total}</div>
-            <div className="text-sm text-gray-400">Total</div>
+          <div className="bg-dark-green-900/50 backdrop-blur-sm p-4 rounded-lg text-center border border-green-700/30">
+            <div className="text-3xl font-bold text-green-400">{stats.total}</div>
+            <div className="text-sm text-green-200">Total</div>
           </div>
-          <div className="bg-gray-800 p-4 rounded-lg text-center">
+          <div className="bg-dark-green-900/50 backdrop-blur-sm p-4 rounded-lg text-center border border-green-700/30">
             <div className="text-3xl font-bold text-yellow-400">{stats.want_to_play}</div>
-            <div className="text-sm text-gray-400">Want to Play</div>
+            <div className="text-sm text-green-200">Want to Play</div>
           </div>
-          <div className="bg-gray-800 p-4 rounded-lg text-center">
-            <div className="text-3xl font-bold text-green-400">{stats.playing}</div>
-            <div className="text-sm text-gray-400">Playing</div>
+          <div className="bg-dark-green-900/50 backdrop-blur-sm p-4 rounded-lg text-center border border-green-700/30">
+            <div className="text-3xl font-bold text-emerald-400">{stats.playing}</div>
+            <div className="text-sm text-green-200">Playing</div>
           </div>
-          <div className="bg-gray-800 p-4 rounded-lg text-center">
-            <div className="text-3xl font-bold text-purple-400">{stats.completed}</div>
-            <div className="text-sm text-gray-400">Completed</div>
+          <div className="bg-dark-green-900/50 backdrop-blur-sm p-4 rounded-lg text-center border border-green-700/30">
+            <div className="text-3xl font-bold text-green-300">{stats.completed}</div>
+            <div className="text-sm text-green-200">Completed</div>
           </div>
-          <div className="bg-gray-800 p-4 rounded-lg text-center">
+          <div className="bg-dark-green-900/50 backdrop-blur-sm p-4 rounded-lg text-center border border-green-700/30">
             <div className="text-3xl font-bold text-red-400">{stats.dropped}</div>
-            <div className="text-sm text-gray-400">Dropped</div>
+            <div className="text-sm text-green-200">Dropped</div>
           </div>
-          <div className="bg-gray-800 p-4 rounded-lg text-center">
+          <div className="bg-dark-green-900/50 backdrop-blur-sm p-4 rounded-lg text-center border border-green-700/30">
             <div className="text-3xl font-bold text-orange-400">{stats.on_hold}</div>
-            <div className="text-sm text-gray-400">On Hold</div>
+            <div className="text-sm text-green-200">On Hold</div>
           </div>
         </div>
 
         {/* Filter */}
         <div className="mb-6">
-          <label className="block text-sm font-medium mb-2">Filter by Status:</label>
+          <label className="block text-sm font-medium mb-2 text-green-300">Filter by Status:</label>
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value as LibraryStatus | 'all')}
-            className="px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 focus:outline-none focus:border-blue-500"
+            className="px-4 py-2 rounded-lg bg-dark-green-900/50 border border-green-700/50 focus:outline-none focus:border-green-500 text-white"
           >
             <option value="all">All Games</option>
             {LIBRARY_STATUSES.map(status => (
@@ -97,13 +97,13 @@ export function BacklogPage() {
         {/* Loading State */}
         {isLoading && (
           <div className="text-center py-12">
-            <div className="text-xl">Loading backlog...</div>
+            <div className="text-xl text-green-300">Loading backlog...</div>
           </div>
         )}
 
         {/* Error State */}
         {error && (
-          <div className="bg-red-900 border border-red-700 text-white px-4 py-3 rounded-lg mb-6">
+          <div className="bg-red-900/50 border border-red-700 text-white px-4 py-3 rounded-lg mb-6">
             {error}
           </div>
         )}
@@ -117,11 +117,11 @@ export function BacklogPage() {
               return (
                 <div
                   key={entry.id}
-                  className="bg-gray-800 rounded-lg hover:ring-2 hover:ring-blue-500 transition overflow-hidden"
+                  className="bg-dark-green-900/50 backdrop-blur-sm rounded-lg hover:ring-2 hover:ring-green-500 transition overflow-hidden border border-green-700/30"
                 >
                   <div className="flex">
                     {/* Cover Image */}
-                    <div className="flex-shrink-0 w-24 h-32 bg-gray-700">
+                    <div className="flex-shrink-0 w-24 h-32 bg-dark-green-800">
                       <img
                         src={coverUrl}
                         alt={entry.igdb_games?.name || 'Game cover'}
@@ -137,24 +137,15 @@ export function BacklogPage() {
                     {/* Game Info */}
                     <div className="flex-1 p-6 flex items-start justify-between">
                       <div className="flex-1">
-                        <h3 className="text-2xl font-bold mb-2">
+                        <h3 className="text-2xl font-bold mb-2 text-green-300">
                           {entry.igdb_games?.name || `Game ID: ${entry.game_id}`}
                         </h3>
-                        
-                        {entry.igdb_games?.rating && (
-                          <div className="flex items-center mb-3">
-                            <span className="text-yellow-400 mr-2">⭐</span>
-                            <span className="text-gray-300">
-                              {Math.round(entry.igdb_games.rating)}/100
-                            </span>
-                          </div>
-                        )}
 
                         <div className="flex items-center space-x-4 mb-4">
                           <select
                             value={entry.status}
                             onChange={(e) => handleStatusChange(entry.game_id, e.target.value as LibraryStatus)}
-                            className="px-3 py-1 rounded bg-gray-700 border border-gray-600 focus:outline-none focus:border-blue-500"
+                            className="px-3 py-1 rounded bg-dark-green-800 border border-green-600 focus:outline-none focus:border-green-500 text-white"
                           >
                             {LIBRARY_STATUSES.map(status => (
                               <option key={status} value={status}>
@@ -164,14 +155,14 @@ export function BacklogPage() {
                           </select>
 
                           {entry.rating && (
-                            <span className="text-gray-400">
+                            <span className="text-green-200">
                               Your Rating: {entry.rating}/10
                             </span>
                           )}
                         </div>
 
                         {entry.notes && (
-                          <p className="text-gray-400 italic">"{entry.notes}"</p>
+                          <p className="text-green-200 italic">"{entry.notes}"</p>
                         )}
                       </div>
 
@@ -192,13 +183,13 @@ export function BacklogPage() {
         {/* Empty State */}
         {!isLoading && filteredLibrary.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-xl text-gray-400 mb-4">
+            <p className="text-xl text-green-300 mb-4">
               {filterStatus === 'all' 
                 ? 'Your backlog is empty' 
                 : `No games with status: ${STATUS_LABELS[filterStatus as LibraryStatus]}`
               }
             </p>
-            <a href="/search" className="text-blue-400 hover:text-blue-300">
+            <a href="/search" className="text-green-400 hover:text-green-300">
               Browse games to add to your backlog
             </a>
           </div>
