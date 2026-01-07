@@ -14,25 +14,29 @@ export function Navigation() {
   };
 
   return (
-    <nav className="bg-gray-900 text-white shadow-lg">
+    <nav className="bg-dark-green-950/90 backdrop-blur-md text-white shadow-lg border-b border-green-700/30">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo/Brand */}
-          <Link to="/" className="text-2xl font-bold hover:text-blue-400 transition">
-            VG Backlog
+          <Link to="/" className="flex items-center hover:opacity-80 transition">
+            <img 
+              src="/Game_and_logz_logo_prototype.png" 
+              alt="Game and Logz Logo" 
+              className="h-12"
+            />
           </Link>
 
           {/* Navigation Links */}
           <div className="flex items-center space-x-6">
             <Link 
               to="/" 
-              className="hover:text-blue-400 transition font-medium"
+              className="hover:text-green-400 transition font-medium"
             >
               Home
             </Link>
             <Link 
               to="/search" 
-              className="hover:text-blue-400 transition font-medium"
+              className="hover:text-green-400 transition font-medium"
             >
               Search
             </Link>
@@ -41,7 +45,7 @@ export function Navigation() {
               <>
                 <Link 
                   to="/backlog" 
-                  className="hover:text-blue-400 transition font-medium"
+                  className="hover:text-green-400 transition font-medium"
                 >
                   {user?.display_name || user?.email?.split('@')[0] || 'My Backlog'}
                 </Link>
@@ -56,13 +60,13 @@ export function Navigation() {
               <div className="flex items-center space-x-4">
                 <Link 
                   to="/login" 
-                  className="hover:text-blue-400 transition font-medium"
+                  className="hover:text-green-400 transition font-medium"
                 >
                   Login
                 </Link>
                 <Link 
                   to="/register" 
-                  className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-md transition font-medium"
+                  className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 px-4 py-2 rounded-md transition font-medium shadow-lg"
                 >
                   Register
                 </Link>

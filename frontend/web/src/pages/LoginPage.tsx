@@ -20,19 +20,19 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
-      <div className="max-w-md w-full bg-gray-800 rounded-lg p-8">
-        <h2 className="text-3xl font-bold text-white mb-6 text-center">Login</h2>
+    <div className="min-h-screen flex items-center justify-center px-4">
+      <div className="max-w-md w-full bg-dark-green-900/50 backdrop-blur-sm rounded-lg p-8 border border-green-700/30">
+        <h2 className="text-3xl font-bold text-green-300 mb-6 text-center">Login</h2>
         
         {error && (
-          <div className="bg-red-900 border border-red-700 text-white px-4 py-3 rounded-lg mb-6">
+          <div className="bg-red-900/50 border border-red-700 text-white px-4 py-3 rounded-lg mb-6">
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
+            <label htmlFor="email" className="block text-sm font-medium text-green-200 mb-2">
               Email
             </label>
             <input
@@ -41,13 +41,13 @@ export function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-4 py-3 rounded-lg bg-gray-700 text-white border border-gray-600 focus:outline-none focus:border-blue-500"
+              className="w-full px-4 py-3 rounded-lg bg-dark-green-800 text-white border border-green-600 focus:outline-none focus:border-green-500 placeholder-green-300/50"
               placeholder="your@email.com"
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
+            <label htmlFor="password" className="block text-sm font-medium text-green-200 mb-2">
               Password
             </label>
             <input
@@ -57,7 +57,7 @@ export function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={6}
-              className="w-full px-4 py-3 rounded-lg bg-gray-700 text-white border border-gray-600 focus:outline-none focus:border-blue-500"
+              className="w-full px-4 py-3 rounded-lg bg-dark-green-800 text-white border border-green-600 focus:outline-none focus:border-green-500 placeholder-green-300/50"
               placeholder="••••••••"
             />
           </div>
@@ -65,15 +65,15 @@ export function LoginPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white py-3 rounded-lg font-semibold transition"
+            className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:from-dark-green-800 disabled:to-dark-green-800 text-white py-3 rounded-lg font-semibold transition shadow-lg"
           >
             {isLoading ? 'Logging in...' : 'Login'}
           </button>
         </form>
 
-        <p className="mt-6 text-center text-gray-400">
+        <p className="mt-6 text-center text-green-200">
           Don't have an account?{' '}
-          <Link to="/register" className="text-blue-400 hover:text-blue-300">
+          <Link to="/register" className="text-green-400 hover:text-green-300">
             Register here
           </Link>
         </p>

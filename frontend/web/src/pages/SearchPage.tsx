@@ -68,11 +68,11 @@ export function SearchPage() {
     : pagination ? Math.ceil(pagination.total / ITEMS_PER_PAGE) : 1;
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen text-white">
       <div className="container mx-auto px-4 py-8">
         {/* Search Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-6">Search Games</h1>
+          <h1 className="text-4xl font-bold mb-6 text-green-300">Search Games</h1>
           
           {/* Search Form */}
           <form onSubmit={handleSearch} className="flex gap-4">
@@ -81,11 +81,11 @@ export function SearchPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search for games..."
-              className="flex-1 px-4 py-3 rounded-lg bg-gray-800 text-white border border-gray-700 focus:outline-none focus:border-blue-500"
+              className="flex-1 px-4 py-3 rounded-lg bg-dark-green-900/50 text-white border border-green-700/50 focus:outline-none focus:border-green-500 placeholder-green-300/50"
             />
             <button
               type="submit"
-              className="bg-blue-600 hover:bg-blue-700 px-8 py-3 rounded-lg font-semibold transition"
+              className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 px-8 py-3 rounded-lg font-semibold transition shadow-lg"
             >
               Search
             </button>
@@ -98,7 +98,7 @@ export function SearchPage() {
                   setCurrentPage(1);
                   fetchGames({ page: 1, limit: ITEMS_PER_PAGE, sortBy: 'rating', order: 'desc' });
                 }}
-                className="bg-gray-700 hover:bg-gray-600 px-6 py-3 rounded-lg font-semibold transition"
+                className="bg-dark-green-800 hover:bg-dark-green-700 px-6 py-3 rounded-lg font-semibold transition border border-green-600"
               >
                 Clear
               </button>
@@ -109,27 +109,27 @@ export function SearchPage() {
         {/* Loading State */}
         {isLoading && (
           <div className="text-center py-12">
-            <div className="text-xl">Loading games...</div>
+            <div className="text-xl text-green-300">Loading games...</div>
           </div>
         )}
 
         {/* Error State */}
         {error && (
-          <div className="bg-red-900 border border-red-700 text-white px-4 py-3 rounded-lg mb-6">
+          <div className="bg-red-900/50 border border-red-700 text-white px-4 py-3 rounded-lg mb-6">
             {error}
           </div>
         )}
 
         {/* Results Info */}
         {!isLoading && paginatedSearchResults.length > 0 && (
-          <div className="mb-4 text-gray-400">
+          <div className="mb-4 text-green-300">
             Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, isSearchMode ? searchResults.length : (pagination?.total || 0))} of {isSearchMode ? searchResults.length : (pagination?.total || 0)} games
           </div>
         )}
 
         {/* Games Grid */}
         {!isLoading && paginatedSearchResults.length > 0 && (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8 gap-4">
             {paginatedSearchResults.map((game) => (
               <GameCard
                 key={game.id}
