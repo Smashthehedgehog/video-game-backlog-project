@@ -55,7 +55,7 @@ export function GameCard({
           </p>
         )}
 
-        {showAddButton && isAuthenticated && onAddToLibrary && (
+        {showAddButton && onAddToLibrary && (
           <button
             onClick={() => onAddToLibrary(game.id)}
             disabled={isInLibrary}
