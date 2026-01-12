@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useGames } from '../../../shared/hooks/useGames';
 import { useLibrary } from '../../../shared/hooks/useLibrary';
 import { useAuth } from '../../../shared/hooks/useAuth';
 import { GameCard } from '../components/GameCard';
 
 export function SearchPage() {
+  const navigate = useNavigate();
   const { games, pagination, fetchGames, searchGames, isLoading, error } = useGames();
   const { addToLibrary, isInLibrary } = useLibrary();
   const { isAuthenticated } = useAuth();
@@ -45,7 +47,7 @@ export function SearchPage() {
 
   const handleAddToLibrary = async (gameId: number) => {
     if (!isAuthenticated) {
-      alert('Please login to add games to your backlog');
+      navigate('/login');
       return;
     }
 
@@ -137,7 +139,7 @@ export function SearchPage() {
                 onAddToLibrary={handleAddToLibrary}
                 isInLibrary={isInLibrary(game.id)}
                 isAuthenticated={isAuthenticated}
-                showAddButton={isAuthenticated}
+                showAddButton={true}
               />
             ))}
           </div>

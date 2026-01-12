@@ -14,7 +14,7 @@ export function Navigation() {
   };
 
   return (
-    <nav className="bg-dark-green-950/90 backdrop-blur-md text-white shadow-lg border-b border-green-700/30">
+    <nav className="bg-dark-green-950/90 backdrop-blur-md text-white shadow-lg border-b border-green-700/30 font-display">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo/Brand */}
